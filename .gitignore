@@ -1,0 +1,10 @@
+# Patient data, sessions, admin password hash and server logs — never in the public repo.
+data/
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+node_modules/
+.claude/
+.DS_Store
