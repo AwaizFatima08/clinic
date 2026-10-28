@@ -1,5 +1,5 @@
 # Patient data, sessions, admin password hash and server logs — never in the public repo.
-data/
+/data/
 *.db
 *.db-shm
 *.db-wal
