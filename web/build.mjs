@@ -23,6 +23,6 @@ await build({
   legalComments: 'none',
   logLevel: 'warning',
 });
-for (const f of ['index.html', 'admin.html', 'styles.css']) await cp(join(src, f), join(out, f));
+for (const f of ['index.html', 'admin.html', 'styles.css', 'privacy.html', 'delete-account.html', 'policy.css']) await cp(join(src, f), join(out, f));
 await cp(join(here, '.htaccess'), join(out, '.htaccess'));
 console.log('Built web/dist');

@@ -1,0 +1,7 @@
+/* Shared by privacy.html and delete-account.html (kept out of inline <style> for the CSP). */
+.doc h2 { margin-top: 1.6em; font-size: 1.15rem; }
+    .doc li { margin: .3em 0; }
+    .doc table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+    .doc th, .doc td { border: 1px solid var(--line); padding: 8px; text-align: start; vertical-align: top; }
+.doc h2 { margin-top: 1.6em; font-size: 1.15rem; }
+    .doc li { margin: .35em 0; }
