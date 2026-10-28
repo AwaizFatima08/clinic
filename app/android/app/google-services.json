@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "289946179336",
+    "project_id": "clinic-schedule-homilabs",
+    "storage_bucket": "clinic-schedule-homilabs.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:289946179336:android:b542f291bfa7a57bca7ebd",
+        "android_client_info": {
+          "package_name": "org.homilabs.clinicschedule"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "289946179336-ksnasugq9fq82p0l69o983md8js13ui4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC2UaPdJeWSNtPnz3ab5orUR64w-GbPDxE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "289946179336-ksnasugq9fq82p0l69o983md8js13ui4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,442 @@
+{
+  "@@locale": "en",
+  "appTitle": "Clinic Schedule",
+  "loading": "Loading",
+  "logIn": "Log in",
+  "createAccount": "Create account",
+  "forgotPassword": "Forgot password",
+  "loginIntro": "Log in to book appointments and see your bookings and notifications.",
+  "email": "Email",
+  "password": "Password",
+  "passwordHelp": "At least 8 characters",
+  "errorEmail": "Please enter a valid email address.",
+  "errorPasswordEmpty": "Please enter your password.",
+  "fullName": "Full name",
+  "phone": "Phone / WhatsApp",
+  "phoneHint": "+92 300 1234567",
+  "errorName": "Please enter the full name (2–80 characters).",
+  "errorPhone": "Please enter a valid phone number (7–15 digits, + allowed).",
+  "resetIntro": "We will email you a link to choose a new password.",
+  "sendResetLink": "Send reset link",
+  "resetSent": "If an account exists for this email, a reset link is on its way.",
+  "yourDetails": "Your details",
+  "profileIntro": "Please add your name and phone number so the clinic can reach you.",
+  "save": "Save",
+  "logOut": "Log out",
+  "notifications": "Notifications",
+  "notificationsUnread": "Notifications, {count} unread",
+  "@notificationsUnread": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "markAllRead": "Mark all as read",
+  "noNotifications": "No notifications yet.",
+  "tabBook": "Book",
+  "tabMyAppointments": "My appointments",
+  "tabAppointments": "Bookings",
+  "tabHours": "Hours",
+  "tabUsers": "Users",
+  "tabSettings": "Settings",
+  "chooseDay": "Choose a day",
+  "chooseTime": "Choose a time",
+  "clinicTimeNote": "All times are clinic time ({timezone}). Each appointment is {minutes} minutes.",
+  "@clinicTimeNote": {
+    "placeholders": {
+      "timezone": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "noAppointmentsAvailable": "No appointments are available at the moment. Please check again later.",
+  "closed": "Closed",
+  "full": "Full",
+  "freeCount": "{count} free",
+  "@freeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "today": "Today",
+  "noTimesLeft": "No free times left on this day.",
+  "morning": "Morning",
+  "afternoon": "Afternoon",
+  "evening": "Evening",
+  "confirm": "Confirm",
+  "bookingAs": "Booking as {name} ({phone})",
+  "@bookingAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "reasonOptional": "Reason for visit (optional)",
+  "confirmAppointment": "Confirm appointment",
+  "bookedTitle": "Your appointment is booked",
+  "bookingReference": "Booking reference",
+  "bookedNote": "You can see it under “My appointments”. We will remind you before it starts.",
+  "bookAnother": "Book another",
+  "loadError": "Could not load. Please check your connection.",
+  "upcomingAppointments": "Upcoming appointments",
+  "noUpcoming": "No upcoming appointments.",
+  "pastAppointments": "Past appointments",
+  "nothingYet": "Nothing here yet.",
+  "cancelQuestion": "Cancel your appointment on {date} at {time}?",
+  "@cancelQuestion": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelAppointment": "Cancel appointment",
+  "cancelled": "Your appointment has been cancelled.",
+  "refLabel": "Ref {ref}",
+  "@refLabel": {
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "cancel": "Cancel",
+  "claimed": "Added your appointment on {date} at {time}.",
+  "@claimed": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "claimTitle": "Add a booking made by phone or without an account",
+  "errorRef": "Enter the 6-character booking reference.",
+  "phoneUsed": "Phone used for that booking",
+  "addToAccount": "Add to my account",
+  "statusBooked": "Booked",
+  "statusCompleted": "Completed",
+  "statusMissed": "Missed",
+  "statusCancelled": "Cancelled",
+  "no": "No",
+  "yes": "Yes",
+  "newAppointment": "New appointment",
+  "noAppointmentsInRange": "No appointments in this range.",
+  "next7Days": "Next 7 days",
+  "allStatuses": "All statuses",
+  "byClinic": "booked by clinic",
+  "hasAccount": "has account",
+  "cancelledBy": "cancelled by {who}",
+  "@cancelledBy": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "markDone": "Done",
+  "markMissed": "Missed",
+  "adminCancelQuestion": "Cancel {name}'s appointment? The patient will be notified.",
+  "@adminCancelQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "setBackToBooked": "Set back to booked",
+  "outsideHoursTitle": "{count, plural, =1{1 booked appointment is outside the opening hours. The patient has been notified:} other{{count} booked appointments are outside the opening hours. The patients have been notified:}}",
+  "@outsideHoursTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "freeTime": "Free time",
+  "patientName": "Patient name",
+  "emailOptional": "Email (optional — confirmation and reminders)",
+  "book": "Book",
+  "adminBooked": "Booked {name}. Reference {ref}.",
+  "@adminBooked": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "saved": "Saved.",
+  "savedWithOutside": "{count, plural, =1{Saved. 1 booked appointment is now outside the opening hours.} other{Saved. {count} booked appointments are now outside the opening hours.}}",
+  "@savedWithOutside": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "to": "to",
+  "remove": "Remove",
+  "addRange": "Add time range",
+  "alreadyBooked": "Already booked",
+  "dailyHours": "Daily hours",
+  "pickSlots": "Pick slots",
+  "weeklyTimetable": "Weekly timetable",
+  "modeDailyNote": "Days are closed until you open them here or in “Pick slots”.",
+  "modeWeeklyNote": "Days follow the weekly timetable. Change hours, pick single slots or close a day here.",
+  "twoWeeks": "2 weeks",
+  "closeDayWithBookings": "{count} appointment(s) are booked on this day. Close it anyway? They stay booked until you cancel them, and the patients are notified.",
+  "@closeDayWithBookings": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "closeDayQuestion": "Close this day?",
+  "sourceWeekly": "Weekly timetable",
+  "sourceHours": "Hours set for this day",
+  "sourceSlots": "Picked slots",
+  "sourceNotOpened": "Not opened",
+  "bookedAndFree": "{booked} booked · {free} free",
+  "@bookedAndFree": {
+    "placeholders": {
+      "booked": {
+        "type": "int"
+      },
+      "free": {
+        "type": "int"
+      }
+    }
+  },
+  "open": "Open",
+  "editHours": "Edit hours",
+  "openCustomHours": "Open with custom hours",
+  "closeDay": "Close day",
+  "useWeekly": "Use weekly timetable",
+  "removeOpening": "Remove opening",
+  "pickSlotsHelp": "Tick the times to open. Only ticked slots can be booked on this day.",
+  "chooseAtLeastOneDay": "Choose at least one day.",
+  "atMost62Days": "Choose at most 62 days at a time.",
+  "pickSlotsIntro": "Choose the days, tick the exact times to open, and apply. On those days only the ticked slots can be booked. Existing appointments are never removed.",
+  "days": "Days",
+  "noDaysMatch": "No days match.",
+  "daysSelected": "{count, plural, =1{1 day selected} other{{count} days selected}}",
+  "@daysSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "fromDate": "From {date}",
+  "@fromDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "toDate": "To {date}",
+  "@toDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "timesWithLength": "Times ({minutes}-minute slots)",
+  "@timesWithLength": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "slotsTicked": "{count, plural, =1{1 slot ticked} other{{count} slots ticked}}",
+  "@slotsTicked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "showTimes": "Show times from",
+  "selectAll": "Select all",
+  "clear": "Clear",
+  "noSlotsTickedQuestion": "No slots are ticked, so {days} day(s) will be closed. Continue?",
+  "@noSlotsTickedQuestion": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "openSlotsQuestion": "Open only {slots} slot(s) on {days} day(s)?",
+  "@openSlotsQuestion": {
+    "placeholders": {
+      "slots": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "openOnlyTheseSlots": "Open only these slots",
+  "closeDaysQuestion": "Close {days} day(s)?",
+  "@closeDaysQuestion": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "closeTheseDays": "Close these days",
+  "resetDaysQuestion": "Return {days} day(s) to the weekly timetable?",
+  "@resetDaysQuestion": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "backToWeekly": "Back to weekly timetable",
+  "weeklyDailyModeNote": "Daily opening mode: this timetable only fills in the hours when you open a day.",
+  "weeklyNote": "These hours repeat every week. Remove all ranges to close that weekday.",
+  "saveWeekly": "Save weekly timetable",
+  "usersIntro": "Everyone with an account. Admins can manage appointments, hours, users and settings.",
+  "searchUsers": "Search name, phone or email",
+  "all": "All",
+  "patients": "Patients",
+  "admins": "Admins",
+  "noUsers": "No users match.",
+  "makeAdminQuestion": "Give {name} full admin access (appointments, hours, users, settings)?",
+  "@makeAdminQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "removeAdminQuestion": "Remove admin access from {name}?",
+  "@removeAdminQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nowAdmin": "{name} is now an admin.",
+  "@nowAdmin": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nowPatient": "{name} is now a patient.",
+  "@nowPatient": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "lastLogin": "last login {when}",
+  "@lastLogin": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "adminYou": "Admin (you)",
+  "rolePatient": "Patient",
+  "roleAdmin": "Admin",
+  "errorNumberRange": "Enter a whole number from {min} to {max}.",
+  "@errorNumberRange": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicSettings": "Clinic settings",
+  "clinicName": "Clinic name",
+  "required": "Required",
+  "doctorName": "Doctor name / title",
+  "slotLength": "Appointment (slot) length",
+  "slotLengthHelp": "Applies to new bookings. Existing appointments keep their time.",
+  "minutes": "{count} minutes",
+  "@minutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "howDaysOpen": "How days open",
+  "modeWeekly": "Automatically from the weekly timetable",
+  "modeDaily": "Only days I open",
+  "bookingWindow": "Patients can book up to … days ahead",
+  "minNotice": "Minimum notice before a slot (minutes)",
+  "requireLogin": "Only patients with an account can book",
+  "maxUpcoming": "Upcoming appointments allowed per patient",
+  "emailNotifications": "Email notifications (confirmations, changes, reminders)",
+  "alertEmail": "Send clinic alerts to (email)",
+  "timeZone": "Clinic time zone",
+  "patientMessage": "Message shown to patients after booking",
+  "saveSettings": "Save settings",
+  "sendingTo": "Sending to {to}…",
+  "@sendingTo": {
+    "placeholders": {
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "testEmailSent": "Sent to {to}. Check the inbox (and the spam folder).",
+  "@testEmailSent": {
+    "placeholders": {
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "testEmailFailed": "Email not sent ({status}): {error}",
+  "@testEmailFailed": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "testEmailTimeout": "No answer from the mail service yet. Try again in a minute.",
+  "emailCheck": "Email check",
+  "emailCheckHelp": "Sends a test message to the email you are logged in with, through the clinic mailbox.",
+  "sendTestEmail": "Send test email"
+}

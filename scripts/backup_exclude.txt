@@ -6,3 +6,8 @@ data/**
 functions/.secret.local
 *.log
 scripts/backup.log
+app/build/**
+app/.dart_tool/**
+app/android/.gradle/**
+app/android/.kotlin/**
+app/.idea/**
