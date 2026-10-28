@@ -218,3 +218,5 @@ button.linkish[disabled] { color: var(--muted); text-decoration: none; }
 .pick.taken { box-shadow: inset 0 -3px 0 var(--warn); }
 .badge.src-hours, .badge.src-slots { background: var(--brand-soft); color: var(--brand-strong); }
 .badge.src-not_activated { background: var(--warn-soft); color: var(--warn); }
+
+a { color: var(--brand); }
