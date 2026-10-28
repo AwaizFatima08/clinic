@@ -62,3 +62,24 @@ export function fromHHMM(s) {
   const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(s ?? '');
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
+
+function tzOffsetMinutes(timeZone, utcMs) {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(new Date(utcMs)).map((x) => [x.type, x.value]),
+  );
+  const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+  return Math.round((asUtc - Math.floor(utcMs / 60000) * 60000) / 60000);
+}
+
+/** The UTC instant of clinic-local `date` at `minutes` past midnight. */
+export function zonedToUtc(date, minutes, timeZone) {
+  const [y, m, d] = date.split('-').map(Number);
+  const guess = Date.UTC(y, m - 1, d) + minutes * 60000;
+  const off1 = tzOffsetMinutes(timeZone, guess);
+  let utc = guess - off1 * 60000;
+  const off2 = tzOffsetMinutes(timeZone, utc);
+  if (off2 !== off1) utc = guess - off2 * 60000;
+  return new Date(utc);
+}

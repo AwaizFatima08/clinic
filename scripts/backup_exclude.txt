@@ -1,7 +1,8 @@
 node_modules/**
 .claude/**
-data/clinic.db
-data/clinic.db-shm
-data/clinic.db-wal
-data/*.log
+web/dist/**
+.firebase/**
+data/**
+functions/.secret.local
+*.log
 scripts/backup.log

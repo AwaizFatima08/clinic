@@ -1,69 +1,99 @@
-# Clinic Scheduler
+# Clinic Schedule
 
-Appointment booking for a single-doctor online clinic. Patients pick a free slot on a
-day that suits them; the admin sets the slot length and the opening hours, day by day.
+Online appointment booking for a single-doctor clinic: **https://clinic-schedule.homilabs.org**
 
-No third-party packages: Node.js 22.13+ with its built-in HTTP server and SQLite.
+- **Patients** create an account (or book as a guest if the clinic allows it), pick a day
+  and a free slot, and see upcoming and past appointments with in-app and email notifications.
+- **The admin** sets the slot length, the weekly timetable, hours per day, or **only selected
+  slots on selected days**, and manages appointments and patients.
 
-## Run
+## Architecture
 
-```bash
-npm start
-```
-
-- Patient page: http://127.0.0.1:3000/
-- Admin panel: http://127.0.0.1:3000/admin
-
-On the first run the server creates an admin password and prints it once to the console.
-Change it under **Admin › Settings**. To choose it yourself, start with `ADMIN_PASSWORD=...`.
-
-| Variable | Default | Meaning |
+| Part | Where | What |
 |---|---|---|
-| `PORT` | `3000` | HTTP port |
-| `HOST` | `127.0.0.1` | Use `0.0.0.0` to serve on the network |
-| `DB_FILE` | `data/clinic.db` | SQLite database (patient data — keep private) |
-| `ADMIN_PASSWORD` | random | First-run admin password only |
-| `CLINIC_TZ` | — | Overrides the clinic time zone setting at start-up |
-| `TRUST_PROXY` | off | `1` behind a reverse proxy (uses `X-Forwarded-For` for rate limits) |
-| `SECURE_COOKIE` | off | `1` when served over HTTPS |
+| Web pages | Hostinger, `public_html/clinic-schedule` | Static files built from `web/src` into `web/dist` |
+| Database | Firestore `(default)`, asia-south1 (Mumbai) | Settings, days, appointments, patients, notifications |
+| Login | Firebase Auth, email + password | Patients and the admin |
+| Server logic | Cloud Functions (asia-south1) | Booking, cancelling, hours, notifications, email, reminders |
 
-## What the admin can do
+Firebase project: `clinic-schedule-homilabs` (account homilabs.smc@gmail.com; the Firebase CLI
+uses that account in this folder only).
 
-- **Slot length**: 5–240 minutes (Settings). New bookings use the new length; existing
-  appointments keep their times and still block any overlapping slot.
-- **Weekly timetable**: one or more time ranges per weekday (e.g. 10:00–13:00 and
-  17:00–20:00); no ranges = closed.
-- **Daily hours**: for any date, change the hours, close the day, or go back to the
-  weekly timetable.
-- **How days open** (Settings):
-  - *Automatically from the weekly timetable*: days open on their own; you only change exceptions.
-  - *Only days I activate*: every day is closed until you press **Activate** in Daily hours
-    (it fills in the weekly hours, which you can adjust).
-- **Booking rules**: how many days ahead patients can book and the minimum notice before a slot.
-- **Appointments**: list by date range and status, mark done / no-show / cancelled, and book on a
-  patient's behalf (phone bookings; ignores minimum notice).
-- If an hours change leaves booked appointments outside opening hours, the admin panel lists them
-  so the patients can be contacted. Bookings are never cancelled automatically.
+Clients only **read** Firestore (see `firestore.rules`). Every change goes through the `api`
+Cloud Function, which checks the rules and runs bookings in a transaction, so a slot can never
+be booked twice.
 
-## Patients
+### Firestore collections
 
-- Choose a day → a free time → enter name, phone (required), email and reason (optional).
-- They receive a 6-character booking reference. With the reference and phone number they
-  can view or cancel the appointment under **My appointment**.
-- One booking per phone number per day. All times are shown in clinic time.
+| Collection | Readable by | Content |
+|---|---|---|
+| `settings/clinic` | everyone | clinic name, slot length, booking window … |
+| `settings/private`, `settings/weekly` | admin | alert email; weekly timetable |
+| `days/{date}` | everyone | open slots and taken times for that date (no patient data) |
+| `dayOverrides/{date}` | admin | hours or picked slots set for that date |
+| `appointments/{ref}` | admin, the patient | one appointment; the document id is the booking reference |
+| `patients/{uid}` | admin, the patient | name, phone, email |
+| `notifications/{id}` | the recipient | in-app notifications |
+| `mail/{id}` | nobody (functions only) | email outbox |
+| `payments`, `prescriptions` | admin, the patient | reserved for extensions |
 
-## Safety
+## Admin features
 
-- Double booking is prevented by an `IMMEDIATE` transaction plus a unique index.
-- Admin password stored as a scrypt hash; sessions in an HttpOnly, SameSite=Strict cookie, 12 h.
-- Rate limits: 5 failed logins / 15 min, 10 bookings / hour, 30 lookups / 15 min per IP.
-- Strict Content-Security-Policy; all user text is inserted as text, never as HTML.
+- **Slot length** 5–240 minutes. Existing appointments keep their times.
+- **Weekly timetable**: several time ranges per weekday.
+- **Daily hours**: per date — edit hours, pick slots, close, or go back to the weekly timetable.
+- **Pick slots**: choose a date range and weekdays, tick exact times, apply — only those slots
+  open on those days.
+- **How days open**: automatically from the weekly timetable, or only days the admin opens.
+- **Booking rules**: booking window, minimum notice, login required or not, upcoming
+  appointments per patient.
+- **Appointments**: done / missed / cancel / restore, book for a patient (phone bookings).
+- **Patients**: list, search, appointment history.
+- Hours changes that leave bookings outside the hours are shown to the admin and the
+  patients are notified. Nothing is cancelled automatically.
 
-## Tests
+## Notifications
+
+| Event | Patient (in-app + email) | Admin (in-app + alert email) |
+|---|---|---|
+| Account created | Welcome | New patient |
+| Booking | Confirmation with reference | New booking |
+| Patient cancels | Cancellation | Patient cancelled |
+| Clinic cancels / marks done / missed / restores | ✔ | |
+| Hours change affects a booking | "may need to change" | summary |
+| 24 h and 1 h before | Reminder | |
+
+Guests get emails only (they have no inbox). Email goes out through an SMTP mailbox
+(`clinic@homilabs.org` on Hostinger). Until the password is set, emails are marked `skipped`.
+
+## Develop
 
 ```bash
-npm test
+npm install && npm --prefix functions install
+npm test                  # unit tests (scheduling rules)
+npm run test:emulator     # booking service + security rules on the Firestore emulator (Java 21)
+npm run build             # web/dist
 ```
+
+Run everything locally: start `scripts/dev-emulators.sh`, serve `web/dist` on
+http://localhost:5180 (`python3 -m http.server 5180 --directory web/dist`). Pages on localhost
+use the emulators automatically.
+
+## Deploy
+
+1. Functions config (gitignored): copy `functions/.env.example` to
+   `functions/.env.clinic-schedule-homilabs` and fill it in.
+2. SMTP password (Firebase secret): `firebase functions:secrets:set SMTP_PASSWORD`.
+3. `npm run deploy:firebase` — rules, indexes and functions (needs the Blaze plan).
+4. `npm run deploy:web` — build and upload to Hostinger over SSH.
+
+First admin login: create an account on the patient page with an email listed in
+`ADMIN_EMAILS`, confirm the email, then log in at `/admin.html`.
+
+## Extending
+
+Payments, prescriptions and other channels plug in through hooks — see
+[docs/EXTENDING.md](docs/EXTENDING.md).
 
 ## Backup
 
@@ -71,18 +101,6 @@ npm test
 bash scripts/backup.sh
 ```
 
-Three layers: local (`/mnt/storage/project_backups/clinic_backup`), Google Drive and GitHub.
-The database snapshot goes only to the two private layers. `data/` is gitignored because the
-GitHub repo is public.
-
-## Layout
-
-```
-src/time.js     date/time helpers (clinic time zone)
-src/slots.js    pure slot logic
-src/db.js       schema and defaults
-src/clinic.js   booking rules, hours, admin auth
-src/server.js   HTTP server and JSON API
-public/         patient page (index.html, app.js) and admin panel (admin.html, admin.js)
-test/           node:test unit tests
-```
+Code: local copy, Google Drive and GitHub (public — no secrets or patient data in git).
+Patient data lives in Firestore; turn on Firestore backups in the Firebase console
+(Firestore → Disaster recovery) once the project is on the Blaze plan.

@@ -8,11 +8,10 @@
 #
 # Run:  bash /mnt/storage/projects/clinic/scripts/backup.sh
 #
-# The live database (data/clinic.db) holds patient details. It is copied with
-# VACUUM INTO, which gives a consistent snapshot even while the server is running,
-# to data/clinic-snapshot.db. Layers 1 and 2 (private) include that snapshot;
-# Layer 3 is public, so data/ is gitignored there. Server logs are never backed up
-# (the first-run log contains the initial admin password).
+# Patient data lives in Firestore (project clinic-schedule-homilabs), not in this folder;
+# protect it with Firestore backups in the Firebase console. This script backs up the code.
+# functions/.env.* holds deploy configuration (admin emails, SMTP user) and goes only to the
+# two private layers; it is gitignored for the public repo.
 #
 # Layer 3 refuses to push if it finds untracked files or uncommitted changes, so
 # stray files never get swept into the public repo. Commit or gitignore them first.
@@ -34,20 +33,6 @@ log(){ echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"; }
 
 log "=== Starting clinic backup: $TIMESTAMP ==="
 cd "$PROJECT_DIR" || { log "FATAL: $PROJECT_DIR not found"; exit 1; }
-
-# ---- Database snapshot ----
-if [ -f data/clinic.db ]; then
-  rm -f data/clinic-snapshot.db
-  if node --disable-warning=ExperimentalWarning -e "
-      const { DatabaseSync } = require('node:sqlite');
-      new DatabaseSync('data/clinic.db').exec(\"VACUUM INTO 'data/clinic-snapshot.db'\");"; then
-    log "Database snapshot OK — data/clinic-snapshot.db"
-  else
-    log "ERROR — database snapshot failed; backups will not contain current patient data"
-  fi
-else
-  log "No database yet (data/clinic.db) — nothing to snapshot"
-fi
 
 # ---- Layer 1: local ----
 log "Layer 1: local backup"

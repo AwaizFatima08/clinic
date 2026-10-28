@@ -8,3 +8,10 @@ data/
 node_modules/
 .claude/
 .DS_Store
+web/dist/
+functions/.env.*
+!functions/.env.example
+.firebase/
+firebase-debug.log
+firestore-debug.log
+functions/.secret.local

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Clinic Admin</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="admin.js"></script>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-row">
+      <div>
+        <h1>Clinic Admin</h1>
+        <p id="admin-sub">Appointments, opening hours and settings</p>
+      </div>
+      <div class="actions">
+        <a class="btn secondary" href="./" target="_blank" rel="noopener">Patient page</a>
+        <span id="bell"></span>
+        <button class="btn secondary hidden" id="logout" type="button">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="login" class="card narrow hidden">
+      <h2>Clinic login</h2>
+      <form id="login-form">
+        <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required></div>
+        <div id="login-msg"></div>
+        <div class="actions">
+          <button class="btn" type="submit">Log in</button>
+          <button class="linkish" type="button" id="forgot">Forgot password?</button>
+        </div>
+      </form>
+      <p class="muted small">First time? Create an account with the clinic's admin email on the <a href="./">patient page</a>, confirm the email, then log in here.</p>
+    </section>
+
+    <section id="not-admin" class="card narrow hidden">
+      <h2>No admin access</h2>
+      <div id="not-admin-msg"></div>
+      <div class="actions">
+        <button class="btn secondary hidden" id="send-verify" type="button">Send verification email</button>
+        <button class="btn" id="retry-admin" type="button">Try again</button>
+      </div>
+    </section>
+
+    <div id="app" class="hidden">
+      <div id="global-warn"></div>
+      <nav class="tabs" role="tablist">
+        <button type="button" data-tab="appointments" class="active">Appointments</button>
+        <button type="button" data-tab="calendar">Daily hours</button>
+        <button type="button" data-tab="pick">Pick slots</button>
+        <button type="button" data-tab="weekly">Weekly timetable</button>
+        <button type="button" data-tab="patients">Patients</button>
+        <button type="button" data-tab="settings">Settings</button>
+      </nav>
+
+      <section data-panel="appointments">
+        <div class="card">
+          <div class="toolbar">
+            <div class="field"><label for="ap-from">From</label><input type="date" id="ap-from"></div>
+            <div class="field"><label for="ap-to">To</label><input type="date" id="ap-to"></div>
+            <div class="field">
+              <label for="ap-status">Status</label>
+              <select id="ap-status">
+                <option value="">All</option>
+                <option value="booked">Booked</option>
+                <option value="completed">Completed</option>
+                <option value="no_show">Missed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <button class="btn secondary" type="button" id="ap-today">Today</button>
+            <button class="btn" type="button" id="ap-new">+ New appointment</button>
+          </div>
+          <div id="ap-msg"></div>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Date</th><th>Time</th><th>Patient</th><th>Contact</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+            <tbody id="ap-rows"></tbody>
+          </table></div>
+        </div>
+
+        <div class="card hidden" id="new-card">
+          <h2>New appointment (booked by clinic)</h2>
+          <form id="new-form">
+            <div class="row">
+              <div class="field"><label for="n-date">Date</label><input type="date" id="n-date" required></div>
+              <div class="field"><label for="n-slot">Free time</label><select id="n-slot" required></select></div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="n-name">Patient name</label><input id="n-name" maxlength="80" required></div>
+              <div class="field"><label for="n-phone">Phone</label><input id="n-phone" type="tel" maxlength="20" required></div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="n-email">Email <span class="hint">optional – confirmation and reminders</span></label><input id="n-email" type="email" maxlength="120"></div>
+              <div class="field"><label for="n-reason">Reason <span class="hint">optional</span></label><input id="n-reason" maxlength="500"></div>
+            </div>
+            <div id="new-msg"></div>
+            <div class="actions">
+              <button class="btn" type="submit">Book</button>
+              <button class="btn secondary" type="button" id="new-cancel">Close</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section data-panel="calendar" class="hidden">
+        <div class="card">
+          <h2>Opening hours, day by day</h2>
+          <p class="muted small" id="cal-mode-note"></p>
+          <div class="toolbar">
+            <div class="field"><label for="cal-from">Start from</label><input type="date" id="cal-from"></div>
+            <button class="btn secondary" type="button" id="cal-prev">← 2 weeks</button>
+            <button class="btn secondary" type="button" id="cal-next">2 weeks →</button>
+          </div>
+          <div id="cal-msg"></div>
+          <div id="cal-days"></div>
+        </div>
+      </section>
+
+      <section data-panel="pick" class="hidden">
+        <div class="card">
+          <h2>Open only selected slots on selected days</h2>
+          <p class="muted small">Choose the days, tick the exact times to open, and apply. On those days only the ticked slots can be booked; the weekly timetable is ignored for them. Existing appointments are never removed.</p>
+          <h3>1. Days</h3>
+          <div class="toolbar">
+            <div class="field"><label for="pk-from">From</label><input type="date" id="pk-from"></div>
+            <div class="field"><label for="pk-to">To</label><input type="date" id="pk-to"></div>
+          </div>
+          <div class="chips" id="pk-weekdays" role="group" aria-label="Weekdays"></div>
+          <p class="muted small" id="pk-dates-note"></p>
+          <h3>2. Times <span class="hint" id="pk-len"></span></h3>
+          <div class="toolbar">
+            <div class="field"><label for="pk-grid-from">Show times from</label><input type="time" id="pk-grid-from" value="08:00" step="300"></div>
+            <div class="field"><label for="pk-grid-to">to</label><input type="time" id="pk-grid-to" value="22:00" step="300"></div>
+            <button class="btn small secondary" type="button" id="pk-all">Select all</button>
+            <button class="btn small secondary" type="button" id="pk-none">Clear</button>
+          </div>
+          <div class="picker" id="pk-grid"></div>
+          <p class="muted small" id="pk-count"></p>
+          <div id="pk-msg"></div>
+          <div class="actions">
+            <button class="btn" type="button" id="pk-apply">Open only these slots</button>
+            <button class="btn secondary" type="button" id="pk-close">Close these days</button>
+            <button class="btn secondary" type="button" id="pk-reset">Back to weekly timetable</button>
+          </div>
+        </div>
+      </section>
+
+      <section data-panel="weekly" class="hidden">
+        <div class="card">
+          <h2>Weekly timetable</h2>
+          <p class="muted small" id="week-mode-note"></p>
+          <div id="week-days"></div>
+          <div id="week-msg"></div>
+          <button class="btn" type="button" id="week-save">Save weekly timetable</button>
+        </div>
+      </section>
+
+      <section data-panel="patients" class="hidden">
+        <div class="card">
+          <h2>Patient accounts</h2>
+          <div class="toolbar">
+            <div class="field"><label for="pt-search">Search name, phone or email</label><input id="pt-search" type="search"></div>
+          </div>
+          <div id="pt-msg"></div>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Joined</th><th></th></tr></thead>
+            <tbody id="pt-rows"></tbody>
+          </table></div>
+        </div>
+        <div class="card hidden" id="pt-detail"></div>
+      </section>
+
+      <section data-panel="settings" class="hidden">
+        <div class="card">
+          <h2>Clinic settings</h2>
+          <form id="settings-form">
+            <div class="row">
+              <div class="field"><label for="s-clinicName">Clinic name</label><input id="s-clinicName" maxlength="80" required></div>
+              <div class="field"><label for="s-doctorName">Doctor name / title</label><input id="s-doctorName" maxlength="80"></div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="s-slotMinutes">Appointment (slot) length, minutes</label>
+                <select id="s-slotMinutes"></select>
+                <span class="hint">Applies to new bookings. Existing appointments keep their time.</span>
+              </div>
+              <div class="field">
+                <label for="s-scheduleMode">How days open</label>
+                <select id="s-scheduleMode">
+                  <option value="weekly">Automatically from the weekly timetable</option>
+                  <option value="daily">Only days I open in “Daily hours” / “Pick slots”</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="s-bookingWindowDays">Patients can book up to … days ahead</label><input id="s-bookingWindowDays" type="number" min="1" max="365" required></div>
+              <div class="field"><label for="s-minNoticeMinutes">Minimum notice before a slot, minutes</label><input id="s-minNoticeMinutes" type="number" min="0" max="10080" required></div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="s-requireLogin">Who can book</label>
+                <select id="s-requireLogin">
+                  <option value="true">Only patients with an account</option>
+                  <option value="false">Anyone (account optional)</option>
+                </select>
+              </div>
+              <div class="field"><label for="s-maxUpcomingPerPatient">Upcoming appointments allowed per patient</label><input id="s-maxUpcomingPerPatient" type="number" min="1" max="50" required></div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="s-emailNotifications">Email notifications</label>
+                <select id="s-emailNotifications">
+                  <option value="true">On – confirmations, changes and reminders</option>
+                  <option value="false">Off – in-app notifications only</option>
+                </select>
+              </div>
+              <div class="field"><label for="s-adminEmail">Send clinic alerts to <span class="hint">new bookings, cancellations</span></label><input id="s-adminEmail" type="email" maxlength="120"></div>
+            </div>
+            <div class="field"><label for="s-timezone">Clinic time zone</label><input id="s-timezone" required placeholder="Asia/Karachi"></div>
+            <div class="field"><label for="s-instructions">Message shown to patients after booking (also in the confirmation)</label><textarea id="s-instructions" maxlength="1000"></textarea></div>
+            <div id="settings-msg"></div>
+            <button class="btn" type="submit">Save settings</button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

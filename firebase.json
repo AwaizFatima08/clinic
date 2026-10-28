@@ -1,0 +1,23 @@
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "asia-south1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "runtime": "nodejs22",
+      "ignore": ["node_modules", ".git", "test", "*.log", ".env.local"]
+    }
+  ],
+  "emulators": {
+    "auth": { "port": 9197 },
+    "firestore": { "port": 8187 },
+    "functions": { "port": 5107 },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
+  }
+}
