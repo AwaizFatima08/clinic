@@ -1,5 +1,5 @@
 // Admin panel: appointments, opening hours (daily, picked slots, weekly), patients, settings.
-import { onAuthStateChanged, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { auth, call, db, friendlyError } from './fb.js';
 import { mountBell } from './bell.js';
@@ -45,13 +45,6 @@ $('#retry-admin').addEventListener('click', async () => {
   await auth.currentUser?.reload();
   checkAdmin(auth.currentUser);
 });
-$('#send-verify').addEventListener('click', (e) =>
-  busy(e.target, $('#not-admin-msg'), async () => {
-    await sendEmailVerification(auth.currentUser);
-    notice($('#not-admin-msg'), 'ok', 'Verification email sent. Open the link, then press “Try again”.');
-  }),
-);
-
 onAuthStateChanged(auth, (user) => {
   show($('#logout'), !!user);
   if (!user) {
@@ -72,7 +65,6 @@ async function checkAdmin(user) {
       if (r.refreshToken) token = await user.getIdTokenResult(true);
     } catch (e) {
       show($('#not-admin'), true);
-      show($('#send-verify'), e.code === 'functions/failed-precondition');
       notice($('#not-admin-msg'), 'error', e.message);
       return;
     }
@@ -674,6 +666,19 @@ const BOOLS = ['requireLogin', 'emailNotifications'];
 
 function setupSettings() {
   $('#s-slotMinutes').replaceChildren(...SLOT_CHOICES.map((m) => el('option', { value: m }, `${m} minutes`)));
+  $('#test-email').addEventListener('click', (e) =>
+    busy(e.target, $('#mail-msg'), async () => {
+      const { id, to } = await call('testEmail');
+      notice($('#mail-msg'), 'ok', `Sending to ${to}…`);
+      for (let i = 0; i < 15; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const r = await call('mailStatus', { id });
+        if (r.status === 'sent') return notice($('#mail-msg'), 'ok', `Sent to ${to}. Check the inbox (and the spam folder).`);
+        if (r.status !== 'pending') throw new Error(`Email not sent (${r.status}): ${r.error ?? 'unknown error'}`);
+      }
+      throw new Error('No answer from the mail function yet. Try again in a minute.');
+    }),
+  );
   $('#settings-form').addEventListener('submit', (ev) => {
     ev.preventDefault();
     busy(ev.submitter, $('#settings-msg'), async () => {

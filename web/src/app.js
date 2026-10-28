@@ -2,7 +2,6 @@
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
-  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
@@ -243,17 +242,15 @@ $('#signup-form').addEventListener('submit', (ev) => {
     const phone = $('#su-phone').value.trim();
     if (name.length < 2) throw new Error('Please enter your full name.');
     if (!/^\+?\d{7,15}$/.test(phone.replace(/[\s\-().]/g, ''))) throw new Error('Please enter a valid phone number (7–15 digits, + allowed).');
-    let cred;
     try {
-      cred = await createUserWithEmailAndPassword(auth, $('#su-email').value.trim(), $('#su-pw').value);
+      await createUserWithEmailAndPassword(auth, $('#su-email').value.trim(), $('#su-pw').value);
     } catch (e) {
       throw new Error(friendlyError(e));
     }
-    sendEmailVerification(cred.user).catch(() => {});
     await call('saveProfile', { name, phone });
     ev.target.reset();
     go(state.slot ? 'book' : 'mine');
-    notice($('#global-msg'), 'ok', 'Your account is ready. We sent you an email to confirm your address.');
+    notice($('#global-msg'), 'ok', 'Your account is ready.');
   });
 });
 
@@ -282,12 +279,6 @@ $('#nav-logout').addEventListener('click', async () => {
   go('book');
 });
 
-$('#resend-verify').addEventListener('click', async (e) => {
-  e.target.disabled = true;
-  await sendEmailVerification(auth.currentUser).catch(() => {});
-  e.target.textContent = 'Sent – check your inbox';
-});
-
 onAuthStateChanged(auth, (user) => {
   state.user = user;
   state.profile = null;
@@ -299,7 +290,6 @@ onAuthStateChanged(auth, (user) => {
   show($('#nav-logout'), !!user);
   show($('#nav-mine'), !!user);
   show($('#nav-lookup'), !user);
-  show($('#verify-banner'), !!user && !user.emailVerified);
   if (user) {
     stops.profile = onSnapshot(doc(db, 'patients', user.uid), (snap) => {
       state.profile = snap.exists() ? snap.data() : null;

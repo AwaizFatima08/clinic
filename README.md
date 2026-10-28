@@ -88,7 +88,10 @@ use the emulators automatically.
 4. `npm run deploy:web` — build and upload to Hostinger over SSH.
 
 First admin login: create an account on the patient page with an email listed in
-`ADMIN_EMAILS`, confirm the email, then log in at `/admin.html`.
+`ADMIN_EMAILS`, then log in at `/admin.html`. Emails are not verified, so the first account
+that claims admin is locked in (`settings/private.adminUids`); to hand admin over to a new
+account, remove the old uid there in the Firebase console. Admin › Settings › “Send test email”
+checks the mailbox.
 
 ## Extending
 

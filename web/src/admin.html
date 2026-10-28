@@ -35,14 +35,13 @@
           <button class="linkish" type="button" id="forgot">Forgot password?</button>
         </div>
       </form>
-      <p class="muted small">First time? Create an account with the clinic's admin email on the <a href="./">patient page</a>, confirm the email, then log in here.</p>
+      <p class="muted small">First time? Create an account with the clinic's admin email on the <a href="./">patient page</a>, then log in here.</p>
     </section>
 
     <section id="not-admin" class="card narrow hidden">
       <h2>No admin access</h2>
       <div id="not-admin-msg"></div>
       <div class="actions">
-        <button class="btn secondary hidden" id="send-verify" type="button">Send verification email</button>
         <button class="btn" id="retry-admin" type="button">Try again</button>
       </div>
     </section>
@@ -226,6 +225,13 @@
             <div id="settings-msg"></div>
             <button class="btn" type="submit">Save settings</button>
           </form>
+        </div>
+
+        <div class="card">
+          <h2>Email check</h2>
+          <p class="muted small">Sends a test message to the email you are logged in with, through the clinic mailbox.</p>
+          <div id="mail-msg"></div>
+          <button class="btn secondary" type="button" id="test-email">Send test email</button>
         </div>
       </section>
     </div>

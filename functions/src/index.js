@@ -5,7 +5,7 @@
 //   nightly    extends the public day documents as the booking window moves forward
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { setGlobalOptions } from 'firebase-functions';
 import { HttpsError, onCall } from 'firebase-functions/https';
 import { defineSecret, defineString } from 'firebase-functions/params';
@@ -101,7 +101,10 @@ const OPS = {
     },
   ],
 
-  // becoming admin: verified email listed in ADMIN_EMAILS
+  // Becoming admin: an account whose email is listed in ADMIN_EMAILS. Email addresses are
+  // not verified, so the first account that claims admin is recorded in settings/private
+  // (adminUids) and only those accounts can be admin afterwards. To hand over admin to a new
+  // account, remove its predecessor from adminUids in the Firebase console.
   claimAdmin: [
     'patient',
     async ({ auth }) => {
@@ -111,7 +114,13 @@ const OPS = {
         .filter(Boolean);
       const email = String(auth.token.email ?? '').toLowerCase();
       if (!email || !allowed.includes(email)) throw new HttpsError('permission-denied', 'This account is not a clinic admin.');
-      if (!auth.token.email_verified) throw new HttpsError('failed-precondition', 'Please verify your email address first (check your inbox).');
+      const ref = db.doc('settings/private');
+      await db.runTransaction(async (tx) => {
+        const uids = (await tx.get(ref)).data()?.adminUids ?? [];
+        if (uids.includes(auth.uid)) return;
+        if (uids.length >= allowed.length) throw new HttpsError('permission-denied', 'The clinic admin account is already set up.');
+        tx.set(ref, { adminUids: [...uids, auth.uid] }, { merge: true });
+      });
       if (!isAdmin(auth)) await getAuth().setCustomUserClaims(auth.uid, { admin: true });
       return { admin: true, refreshToken: !isAdmin(auth) };
     },
@@ -125,6 +134,33 @@ const OPS = {
   setStatus: ['admin', ({ service, data }) => service.setStatusByAdmin(data?.ref, data?.status)],
   outsideHours: ['admin', ({ service }) => service.outsideHours()],
   rebuildDays: ['admin', async ({ service }) => ({ days: await service.rebuildWindow() })],
+  // Sends a test email to the signed-in admin; poll mailStatus for the result.
+  testEmail: [
+    'admin',
+    async ({ service, auth }) => {
+      const s = await service.settings();
+      const to = auth.token.email;
+      if (!to) throw new HttpsError('failed-precondition', 'Your account has no email address.');
+      const ref = await db.collection('mail').add({
+        to,
+        subject: `Test email – ${s.clinicName}`,
+        text: `This is a test message from the ${s.clinicName} booking system. If you can read it, email notifications are working.\n\n— ${s.clinicName}`,
+        kind: 'test',
+        status: 'pending',
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      return { id: ref.id, to };
+    },
+  ],
+  mailStatus: [
+    'admin',
+    async ({ data }) => {
+      const snap = await db.collection('mail').doc(String(data?.id ?? '')).get();
+      if (!snap.exists || snap.data().kind !== 'test') throw new HttpsError('not-found', 'Unknown test email');
+      const m = snap.data();
+      return { status: m.status, error: m.error ?? null };
+    },
+  ],
 };
 
 function toHttpsError(e) {
