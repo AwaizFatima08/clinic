@@ -65,6 +65,17 @@ function rateLimit(key, max, windowMs) {
 
 // ---------- operations ----------
 
+/** Data first, then the login, so a failure part-way can simply be retried. */
+async function deleteAccount(service, uid) {
+  const result = await service.deleteAccount(uid);
+  await getAuth()
+    .deleteUser(uid)
+    .catch((e) => {
+      if (e.code !== 'auth/user-not-found') throw e;
+    });
+  return result;
+}
+
 const OPS = {
   // patient (signed in)
   saveProfile: ['patient', ({ service, auth, data }) => service.saveProfile(auth.uid, auth.token.email ?? '', data)],
@@ -85,18 +96,11 @@ const OPS = {
     },
   ],
 
-  // Data first, then the login, so a failure part-way can simply be retried.
   deleteMyAccount: [
     'patient',
-    async ({ service, auth }) => {
+    ({ service, auth }) => {
       rateLimit(`delete:${auth.uid}`, 5, 900_000);
-      const result = await service.deleteAccount(auth.uid);
-      await getAuth()
-        .deleteUser(auth.uid)
-        .catch((e) => {
-          if (e.code !== 'auth/user-not-found') throw e;
-        });
-      return result;
+      return deleteAccount(service, auth.uid);
     },
   ],
 
@@ -129,6 +133,16 @@ const OPS = {
 
   // admin
   setRole: ['admin', ({ service, auth, data }) => service.setRole(auth.uid, data?.uid, data?.role)],
+  // For deletion requests sent by email (see web/src/delete-account.html).
+  deleteUser: [
+    'admin',
+    ({ service, auth, data }) => {
+      const uid = String(data?.uid ?? '');
+      if (!uid) throw new ValidationError('Choose a user');
+      if (uid === auth.uid) throw new ConflictError('Use "Delete my account" for your own account.');
+      return deleteAccount(service, uid);
+    },
+  ],
   saveSettings: ['admin', ({ service, data }) => service.saveSettings(data)],
   saveWeekly: ['admin', ({ service, data }) => service.saveWeekly(data?.days)],
   setDays: ['admin', ({ service, data }) => service.setDays(data?.dates, data?.override ?? null)],

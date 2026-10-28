@@ -132,7 +132,7 @@ class _UserCard extends ConsumerWidget {
           context: context,
           isScrollControlled: true,
           showDragHandle: true,
-          builder: (_) => _UserAppointments(user: user),
+          builder: (_) => _UserAppointments(user: user, canDelete: !isMe),
         ),
         trailing: isMe
             ? Chip(label: Text(l.adminYou))
@@ -157,9 +157,25 @@ final FutureProviderFamily<List<Appointment>, String> _userAppointmentsProvider 
     );
 
 class _UserAppointments extends ConsumerWidget {
-  const _UserAppointments({required this.user});
+  const _UserAppointments({required this.user, required this.canDelete});
 
   final AppUser user;
+  final bool canDelete;
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final l = AppLocalizations.of(context);
+    final who = user.name.isEmpty ? user.email : user.name;
+    if (!await confirmAction(context, l.deleteUserQuestion(who), confirmLabel: l.deleteAccountConfirm)) return;
+    final result = await ref.read(userRepositoryProvider).deleteUser(user.uid);
+    if (!context.mounted) return;
+    switch (result) {
+      case Ok():
+        showMessage(context, l.userDeleted(who));
+        Navigator.of(context).pop();
+      case Err(:final failure):
+        showMessage(context, failure.message, error: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -190,6 +206,18 @@ class _UserAppointments extends ConsumerWidget {
                       ),
                   ],
           ),
+          if (canDelete) ...[
+            const Divider(),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+                onPressed: () => _delete(context, ref),
+                icon: const Icon(Icons.delete_forever_outlined),
+                label: Text(l.deleteUserButton),
+              ),
+            ),
+          ],
         ],
       ),
     );

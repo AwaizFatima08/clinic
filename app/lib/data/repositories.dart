@@ -287,4 +287,7 @@ class UserRepository {
 
   Future<Result<void>> setRole(String uid, UserRole role) async =>
       _void(await _api.call('setRole', {'uid': uid, 'role': role.name}));
+
+  /// Deletes another user's account (a deletion request received by email).
+  Future<Result<void>> deleteUser(String uid) async => _void(await _api.call('deleteUser', {'uid': uid}));
 }

@@ -670,4 +670,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountAdminNote => 'If you are the only admin, make someone else an admin first.';
+
+  @override
+  String get deleteUserButton => 'Delete this account';
+
+  @override
+  String deleteUserQuestion(String name) {
+    return 'Delete $name\'s account? Their upcoming appointments are cancelled and their name, phone, email and visit reasons are removed from past ones. This cannot be undone.';
+  }
+
+  @override
+  String userDeleted(String name) {
+    return '$name\'s account has been deleted.';
+  }
 }

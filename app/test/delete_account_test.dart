@@ -84,4 +84,11 @@ void main() {
     verifyNever(() => auth.signOut());
     expect(find.text('You are the only admin.'), findsOneWidget);
   });
+
+  test('admin deletes another account through the deleteUser op', () async {
+    final api = _FakeApi(const Ok({}));
+    final r = await UserRepository(_MockFirestore(), api).deleteUser('u-9');
+    expect(r, isA<Ok<void>>());
+    expect(api.calls, ['deleteUser']);
+  });
 }

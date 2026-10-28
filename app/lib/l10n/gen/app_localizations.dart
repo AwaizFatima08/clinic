@@ -1230,6 +1230,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'If you are the only admin, make someone else an admin first.'**
   String get deleteAccountAdminNote;
+
+  /// No description provided for @deleteUserButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this account'**
+  String get deleteUserButton;
+
+  /// No description provided for @deleteUserQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}\'s account? Their upcoming appointments are cancelled and their name, phone, email and visit reasons are removed from past ones. This cannot be undone.'**
+  String deleteUserQuestion(String name);
+
+  /// No description provided for @userDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s account has been deleted.'**
+  String userDeleted(String name);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
