@@ -12,7 +12,7 @@ Online appointment booking for a single-doctor clinic: **https://clinic-schedule
 | Part | Where | What |
 |---|---|---|
 | Web pages | Hostinger, `public_html/clinic-schedule` | Static files built from `web/src` into `web/dist` |
-| Database | Firestore `(default)`, asia-south1 (Mumbai) | Settings, days, appointments, patients, notifications |
+| Database | Firestore `(default)`, asia-south1 (Mumbai) | Settings, days, appointments, users, notifications |
 | Login | Firebase Auth, email + password | Patients and the admin |
 | Server logic | Cloud Functions (asia-south1) | Booking, cancelling, hours, notifications, email, reminders |
 
@@ -32,7 +32,7 @@ be booked twice.
 | `days/{date}` | everyone | open slots and taken times for that date (no patient data) |
 | `dayOverrides/{date}` | admin | hours or picked slots set for that date |
 | `appointments/{ref}` | admin, the patient | one appointment; the document id is the booking reference |
-| `patients/{uid}` | admin, the patient | name, phone, email |
+| `users/{uid}` | admin, the user | name, phone, email, **role** (`patient` / `admin`), created, last login |
 | `notifications/{id}` | the recipient | in-app notifications |
 | `mail/{id}` | nobody (functions only) | email outbox |
 | `payments`, `prescriptions` | admin, the patient | reserved for extensions |
@@ -48,7 +48,8 @@ be booked twice.
 - **Booking rules**: booking window, minimum notice, login required or not, upcoming
   appointments per patient.
 - **Appointments**: done / missed / cancel / restore, book for a patient (phone bookings).
-- **Patients**: list, search, appointment history.
+- **Users**: every account with its role; search, filter by role, appointment history, make
+  someone admin or remove admin (not yourself, never the last admin). Role changes apply at once.
 - Hours changes that leave bookings outside the hours are shown to the admin and the
   patients are notified. Nothing is cancelled automatically.
 
@@ -88,9 +89,9 @@ use the emulators automatically.
 4. `npm run deploy:web` — build and upload to Hostinger over SSH.
 
 First admin login: create an account on the patient page with an email listed in
-`ADMIN_EMAILS`, then log in at `/admin.html`. Emails are not verified, so the first account
-that claims admin is locked in (`settings/private.adminUids`); to hand admin over to a new
-account, remove the old uid there in the Firebase console. Admin › Settings › “Send test email”
+`ADMIN_EMAILS`, then log in at `/admin.html`. Emails are not verified, so each listed address
+can grant admin once (`settings/private.adminUids`). After that, admins give or remove admin
+in the **Users** tab — no redeploy needed. Admin › Settings › “Send test email”
 checks the mailbox.
 
 ## Extending

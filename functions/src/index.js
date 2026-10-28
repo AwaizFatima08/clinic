@@ -39,18 +39,18 @@ function context() {
   const service = new ClinicService(db, { hooks });
   const { notify } = registerNotifications({ db, hooks, service, siteUrl: SITE_URL.value() });
   loadExtensions({ db, hooks, service, notify });
-  ctx = { hooks, service, setup: service.ensureSetup() };
+  const lookupEmail = (uid) => getAuth().getUser(uid).then((u) => u.email ?? null).catch(() => null);
+  ctx = { hooks, service, setup: service.ensureSetup().then(() => service.migrateUsers(lookupEmail)) };
   return ctx;
 }
 
 // ---------- auth helpers ----------
 
-const isAdmin = (auth) => auth?.token?.admin === true;
-
-function requireAuth(level, auth) {
+/** Roles live in users/{uid}.role, so a change takes effect on the very next request. */
+async function requireAuth(level, auth, service) {
   if (level === 'public') return;
   if (!auth) throw new HttpsError('unauthenticated', 'Please log in.');
-  if (level === 'admin' && !isAdmin(auth)) throw new HttpsError('permission-denied', 'Admin access only.');
+  if (level === 'admin' && (await service.role(auth.uid)) !== 'admin') throw new HttpsError('permission-denied', 'Admin access only.');
 }
 
 // Best-effort per-instance limiter for the unauthenticated operations.
@@ -101,32 +101,19 @@ const OPS = {
     },
   ],
 
-  // Becoming admin: an account whose email is listed in ADMIN_EMAILS. Email addresses are
-  // not verified, so the first account that claims admin is recorded in settings/private
-  // (adminUids) and only those accounts can be admin afterwards. To hand over admin to a new
-  // account, remove its predecessor from adminUids in the Firebase console.
-  claimAdmin: [
+  // First-time admin: an account whose email is in ADMIN_EMAILS (each address can be claimed
+  // once, see ClinicService.bootstrapAdmin). After that, admins manage roles in the Users tab.
+  claimAdmin: ['patient', ({ service, auth }) => service.bootstrapAdmin(auth.uid, auth.token.email, ADMIN_EMAILS.value().split(','))],
+  touch: [
     'patient',
-    async ({ auth }) => {
-      const allowed = ADMIN_EMAILS.value()
-        .split(',')
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean);
-      const email = String(auth.token.email ?? '').toLowerCase();
-      if (!email || !allowed.includes(email)) throw new HttpsError('permission-denied', 'This account is not a clinic admin.');
-      const ref = db.doc('settings/private');
-      await db.runTransaction(async (tx) => {
-        const uids = (await tx.get(ref)).data()?.adminUids ?? [];
-        if (uids.includes(auth.uid)) return;
-        if (uids.length >= allowed.length) throw new HttpsError('permission-denied', 'The clinic admin account is already set up.');
-        tx.set(ref, { adminUids: [...uids, auth.uid] }, { merge: true });
-      });
-      if (!isAdmin(auth)) await getAuth().setCustomUserClaims(auth.uid, { admin: true });
-      return { admin: true, refreshToken: !isAdmin(auth) };
+    async ({ service, auth }) => {
+      await service.touchLogin(auth.uid);
+      return { role: await service.role(auth.uid) };
     },
   ],
 
   // admin
+  setRole: ['admin', ({ service, auth, data }) => service.setRole(auth.uid, data?.uid, data?.role)],
   saveSettings: ['admin', ({ service, data }) => service.saveSettings(data)],
   saveWeekly: ['admin', ({ service, data }) => service.saveWeekly(data?.days)],
   setDays: ['admin', ({ service, data }) => service.setDays(data?.dates, data?.override ?? null)],
@@ -184,12 +171,12 @@ export const api = onCall({ cors: true }, async (req) => {
     if (op.startsWith('ext:')) {
       const action = hooks.action(op.slice(4));
       if (!action) throw new HttpsError('not-found', 'Unknown action');
-      requireAuth(action.auth, auth);
+      await requireAuth(action.auth, auth, service);
       return await action.handler({ data, auth });
     }
     const entry = OPS[op];
     if (!entry) throw new HttpsError('not-found', 'Unknown operation');
-    requireAuth(entry[0], auth);
+    await requireAuth(entry[0], auth, service);
     return await entry[1]({ service, auth, data, ip });
   } catch (e) {
     throw toHttpsError(e);

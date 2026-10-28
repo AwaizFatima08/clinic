@@ -17,6 +17,7 @@ export const EVENTS = Object.freeze({
   APPOINTMENT_REMINDER: 'appointment.reminder', // {appointment, kind: 'r24'|'r1'}
   HOURS_CHANGED: 'hours.changed', // {outsideHours: appointment[]}
   PATIENT_REGISTERED: 'patient.registered', // {patient}
+  USER_ROLE_CHANGED: 'user.role_changed', // {uid, from, to}
   NOTIFICATION_CREATED: 'notification.created', // {notification} — delivery channels listen here
 });
 

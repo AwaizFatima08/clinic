@@ -291,8 +291,9 @@ onAuthStateChanged(auth, (user) => {
   show($('#nav-mine'), !!user);
   show($('#nav-lookup'), !user);
   if (user) {
-    stops.profile = onSnapshot(doc(db, 'patients', user.uid), (snap) => {
-      state.profile = snap.exists() ? snap.data() : null;
+    call('touch').catch(() => {});
+    stops.profile = onSnapshot(doc(db, 'users', user.uid), (snap) => {
+      state.profile = snap.exists() && snap.data().name ? snap.data() : null;
       renderForm();
     });
     stops.mine = onSnapshot(

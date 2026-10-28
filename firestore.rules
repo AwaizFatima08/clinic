@@ -7,8 +7,11 @@ service cloud.firestore {
     function signedIn() {
       return request.auth != null;
     }
+    // Roles live in users/{uid}.role (written only by the Cloud Functions).
     function isAdmin() {
-      return signedIn() && request.auth.token.admin == true;
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     function ownsDoc() {
       return signedIn() && resource.data.patientUid == request.auth.uid;
@@ -40,7 +43,8 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    match /patients/{uid} {
+    // Every account: name, phone, email, role. Users read their own; admins read all.
+    match /users/{uid} {
       allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
       allow write: if false;
     }

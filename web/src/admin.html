@@ -53,7 +53,7 @@
         <button type="button" data-tab="calendar">Daily hours</button>
         <button type="button" data-tab="pick">Pick slots</button>
         <button type="button" data-tab="weekly">Weekly timetable</button>
-        <button type="button" data-tab="patients">Patients</button>
+        <button type="button" data-tab="users">Users</button>
         <button type="button" data-tab="settings">Settings</button>
       </nav>
 
@@ -159,15 +159,20 @@
         </div>
       </section>
 
-      <section data-panel="patients" class="hidden">
+      <section data-panel="users" class="hidden">
         <div class="card">
-          <h2>Patient accounts</h2>
+          <h2>Users</h2>
+          <p class="muted small">Everyone with an account. Admins can manage appointments, hours, users and settings.</p>
           <div class="toolbar">
             <div class="field"><label for="pt-search">Search name, phone or email</label><input id="pt-search" type="search"></div>
+            <div class="field">
+              <label for="pt-role">Role</label>
+              <select id="pt-role"><option value="">All</option><option value="patient">Patients</option><option value="admin">Admins</option></select>
+            </div>
           </div>
           <div id="pt-msg"></div>
           <div class="table-scroll"><table>
-            <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Joined</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Role</th><th>Joined</th><th></th></tr></thead>
             <tbody id="pt-rows"></tbody>
           </table></div>
         </div>

@@ -5,6 +5,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { HookBus } from '../../src/hooks.js';
 import { ClinicService, ConflictError, NotFoundError, PermissionError } from '../../src/service.js';
+import { Timestamp } from 'firebase-admin/firestore';
 import { registerNotifications } from '../../src/notify.js';
 import { ValidationError } from '../../src/core/slots.js';
 
@@ -157,4 +158,43 @@ test('daily activation mode closes days until opened', async () => {
   assert.equal((await db.doc('days/2026-11-05').get()).data().source, 'not_activated');
   await service.setDays(['2026-11-05'], { mode: 'hours', intervals: [{ start: '10:00', end: '11:00' }] });
   assert.equal((await db.doc('days/2026-11-05').get()).data().slots.length, 3);
+});
+
+test('users: a login recorded before the profile is saved still ends up a patient', async () => {
+  await service.touchLogin('u-new');
+  assert.equal((await db.doc('users/u-new').get()).exists, false);
+  await service.saveProfile('u-new', 'new@example.com', { name: 'New', phone: '+923001112299' });
+  await service.touchLogin('u-new');
+  const u = (await db.doc('users/u-new').get()).data();
+  assert.equal(u.role, 'patient');
+  assert.ok(u.createdAt && u.lastLoginAt);
+});
+
+test('users: sign-up creates a patient; first admin by email list; roles managed by admins', async () => {
+  await service.saveProfile('u-pat', 'pat@example.com', { name: 'Pat', phone: '+923001231234' });
+  assert.equal((await db.doc('users/u-pat').get()).data().role, 'patient');
+
+  await assert.rejects(service.bootstrapAdmin('u-pat', 'pat@example.com', ['boss@clinic.test']), PermissionError);
+  await service.bootstrapAdmin('u-boss', 'boss@clinic.test', ['boss@clinic.test']);
+  assert.equal(await service.role('u-boss'), 'admin');
+  // The address is used up: another account with the same email cannot claim it again.
+  await assert.rejects(service.bootstrapAdmin('u-other', 'boss@clinic.test', ['boss@clinic.test']), PermissionError);
+
+  await service.setRole('u-boss', 'u-pat', 'admin');
+  assert.equal(await service.role('u-pat'), 'admin');
+  assert.ok((await notifications((n) => n.uid === 'u-pat')).some((n) => n.kind === 'role_admin'));
+  await assert.rejects(service.setRole('u-boss', 'u-boss', 'patient'), ConflictError, 'no self-demotion');
+  await service.setRole('u-pat', 'u-boss', 'patient');
+  await assert.rejects(service.setRole('u-boss', 'u-pat', 'patient'), ConflictError, 'keeps the last admin');
+  await assert.rejects(service.setRole('u-pat', 'u-pat', 'superuser'), ValidationError);
+});
+
+test('migration copies old patients and email-list admins into users once', async () => {
+  await db.doc('patients/old-1').set({ name: 'Old Patient', phone: '+923000000009', email: 'old@example.com', createdAt: Timestamp.now() });
+  await db.doc('settings/private').set({ adminUids: ['old-admin'] }, { merge: true });
+  const moved = await service.migrateUsers(async () => 'old-admin@clinic.test');
+  assert.equal(moved, 2);
+  assert.equal((await db.doc('users/old-1').get()).data().role, 'patient');
+  assert.deepEqual((({ role, email }) => ({ role, email }))((await db.doc('users/old-admin').get()).data()), { role: 'admin', email: 'old-admin@clinic.test' });
+  assert.equal(await service.migrateUsers(async () => null), 0, 'second run changes nothing');
 });

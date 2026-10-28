@@ -24,6 +24,8 @@ export class ConflictError extends Error {}
 export class NotFoundError extends Error {}
 export class PermissionError extends Error {}
 
+export const ROLES = ['patient', 'admin'];
+
 // Settings only the admin may read (settings/clinic is public).
 const PRIVATE_SETTINGS = ['adminEmail'];
 const REF_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I
@@ -387,23 +389,115 @@ export class ClinicService {
     return sent;
   }
 
-  // ---------- patients ----------
+  // ---------- users & roles ----------
+  // users/{uid}: {name, phone, email, role, createdAt, updatedAt, lastLoginAt}. Every account
+  // is a user; `role` decides what it may do ('patient' or 'admin'; more roles can be added
+  // to ROLES). Firestore rules and the api function both read the role from this document.
 
-  /** Creates or updates the signed-in patient's profile. */
+  userRef(uid) {
+    return this.db.doc(`users/${uid}`);
+  }
+
+  /** Creates or updates the signed-in user's own details. New accounts start as patients. */
   async saveProfile(uid, email, input) {
     const { name, phone } = validatePatientDetails({ name: input?.name, phone: input?.phone, email });
-    const ref = this.db.doc(`patients/${uid}`);
-    const existed = (await ref.get()).exists;
+    const ref = this.userRef(uid);
+    const snap = await ref.get();
+    const isNew = !snap.exists || !snap.data().name;
     const data = { name, phone, email: email ?? '', updatedAt: Timestamp.fromDate(this.now()) };
-    if (!existed) data.createdAt = Timestamp.fromDate(this.now());
+    if (!snap.data()?.role) data.role = 'patient';
+    if (!snap.data()?.createdAt) data.createdAt = Timestamp.fromDate(this.now());
     await ref.set(data, { merge: true });
-    const patient = { uid, name, phone, email: email ?? '' };
-    if (!existed) await this.hooks.emit(EVENTS.PATIENT_REGISTERED, { patient });
-    return patient;
+    const user = { uid, name, phone, email: email ?? '', role: snap.data()?.role ?? 'patient' };
+    if (isNew && user.role === 'patient') await this.hooks.emit(EVENTS.PATIENT_REGISTERED, { patient: user });
+    return user;
   }
 
   async profile(uid) {
-    const snap = await this.db.doc(`patients/${uid}`).get();
+    const snap = await this.userRef(uid).get();
     return snap.exists ? { uid, ...snap.data() } : null;
+  }
+
+  async role(uid) {
+    if (!uid) return null;
+    const snap = await this.userRef(uid).get();
+    return snap.exists ? snap.data().role ?? 'patient' : null;
+  }
+
+  /** Records the login time of an existing user (a brand-new sign-up has no document yet). */
+  async touchLogin(uid) {
+    await this.userRef(uid)
+      .update({ lastLoginAt: Timestamp.fromDate(this.now()) })
+      .catch((e) => {
+        if (e.code !== 5) throw e; // 5 = NOT_FOUND
+      });
+  }
+
+  /**
+   * First-time admin: an account whose email is in `allowedEmails`. Emails are not verified,
+   * so each listed address can be claimed once; the claiming uids are kept in
+   * settings/private.adminUids.
+   */
+  async bootstrapAdmin(uid, email, allowedEmails) {
+    const allowed = allowedEmails.map((e) => e.trim().toLowerCase()).filter(Boolean);
+    const mail = String(email ?? '').toLowerCase();
+    if (!mail || !allowed.includes(mail)) throw new PermissionError('This account is not a clinic admin.');
+    await this.db.runTransaction(async (tx) => {
+      const priv = await tx.get(this.privateRef);
+      const user = await tx.get(this.userRef(uid));
+      const uids = priv.data()?.adminUids ?? [];
+      if (!uids.includes(uid)) {
+        if (uids.length >= allowed.length) throw new PermissionError('The clinic admin accounts are already set up. Ask an admin to give you access.');
+        tx.set(this.privateRef, { adminUids: [...uids, uid] }, { merge: true });
+      }
+      const base = user.exists ? {} : { email: mail, name: '', phone: '', createdAt: Timestamp.fromDate(this.now()) };
+      tx.set(this.userRef(uid), { ...base, role: 'admin', updatedAt: Timestamp.fromDate(this.now()) }, { merge: true });
+    });
+    return { role: 'admin' };
+  }
+
+  /** An admin changes someone's role. Admins cannot demote themselves or remove the last admin. */
+  async setRole(actorUid, uid, role) {
+    if (!ROLES.includes(role)) throw new ValidationError(`Role must be one of: ${ROLES.join(', ')}`);
+    const result = await this.db.runTransaction(async (tx) => {
+      const snap = await tx.get(this.userRef(String(uid ?? '')));
+      if (!snap.exists) throw new NotFoundError('User not found');
+      const from = snap.data().role ?? 'patient';
+      if (from === role) return { from, to: role };
+      if (from === 'admin') {
+        if (uid === actorUid) throw new ConflictError('You cannot remove your own admin role. Ask another admin.');
+        const admins = await tx.get(this.db.collection('users').where('role', '==', 'admin'));
+        if (admins.size <= 1) throw new ConflictError('There must be at least one admin.');
+      }
+      tx.update(snap.ref, { role, updatedAt: Timestamp.fromDate(this.now()) });
+      return { from, to: role };
+    });
+    if (result.from !== result.to) await this.hooks.emit(EVENTS.USER_ROLE_CHANGED, { uid, ...result });
+    return { uid, role };
+  }
+
+  /**
+   * One-time move from the old `patients` collection and email-list admins to `users`.
+   * Safe to run repeatedly; never overwrites an existing user's role.
+   */
+  async migrateUsers(lookupEmail) {
+    let moved = 0;
+    const old = await this.db.collection('patients').get();
+    for (const d of old.docs) {
+      const ref = this.userRef(d.id);
+      if ((await ref.get()).exists) continue;
+      await ref.set({ ...d.data(), role: 'patient' });
+      moved++;
+    }
+    const adminUids = (await this.privateRef.get()).data()?.adminUids ?? [];
+    for (const uid of adminUids) {
+      const ref = this.userRef(uid);
+      const snap = await ref.get();
+      if (snap.exists && snap.data().role === 'admin') continue;
+      const base = snap.exists ? {} : { email: (await lookupEmail(uid)) ?? '', name: '', phone: '', createdAt: Timestamp.fromDate(this.now()) };
+      await ref.set({ ...base, role: 'admin' }, { merge: true });
+      moved++;
+    }
+    return moved;
   }
 }

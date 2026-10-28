@@ -1,4 +1,4 @@
-// Admin panel: appointments, opening hours (daily, picked slots, weekly), patients, settings.
+// Admin panel: appointments, opening hours (daily, picked slots, weekly), users, settings.
 import { onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { auth, call, db, friendlyError } from './fb.js';
@@ -57,27 +57,29 @@ onAuthStateChanged(auth, (user) => {
   checkAdmin(user);
 });
 
+/** Admin access comes from users/{uid}.role; the email list can grant it the first time. */
 async function checkAdmin(user) {
-  let token = await user.getIdTokenResult();
-  if (!token.claims.admin) {
-    try {
-      const r = await call('claimAdmin');
-      if (r.refreshToken) token = await user.getIdTokenResult(true);
-    } catch (e) {
-      show($('#not-admin'), true);
-      notice($('#not-admin-msg'), 'error', e.message);
-      return;
-    }
+  try {
+    let { role } = await call('touch');
+    if (role !== 'admin') ({ role } = await call('claimAdmin'));
+    if (role !== 'admin') throw new Error('This account is not a clinic admin.');
+  } catch (e) {
+    show($('#not-admin'), true);
+    notice($('#not-admin-msg'), 'error', e.message);
+    return;
   }
   show($('#not-admin'), false);
-  if (token.claims.admin) startApp();
+  startApp(user);
 }
 
 // ---------- app ----------
 
-function startApp() {
+let me = null;
+
+function startApp(user) {
   if (started) return;
   started = true;
+  me = user.uid;
   show($('#app'), true);
   stops.push(mountBell($('#bell'), { audience: 'admin', onOpen: () => showTab('appointments') }));
   stops.push(
@@ -91,7 +93,7 @@ function startApp() {
         setupCalendar();
         setupPicker();
         setupWeekly();
-        setupPatients();
+        setupUsers();
         setupSettings();
       }
       refreshCurrentTab();
@@ -116,7 +118,7 @@ function showTab(name) {
 
 function refreshCurrentTab() {
   if (!today) return;
-  ({ appointments: loadAppointments, calendar: loadCalendar, pick: renderPicker, weekly: loadWeekly, patients: loadPatients, settings: fillSettings })[currentTab]?.();
+  ({ appointments: loadAppointments, calendar: loadCalendar, pick: renderPicker, weekly: loadWeekly, users: loadUsers, settings: fillSettings })[currentTab]?.();
 }
 
 // ---------- warnings ----------
@@ -595,53 +597,86 @@ async function loadWeekly() {
   $('#week-days').replaceChildren(...[1, 2, 3, 4, 5, 6, 0].map((d) => el('div', { class: 'week-day' }, el('strong', {}, WEEKDAYS[d]), weekEditors[d].node)));
 }
 
-// ---------- patients ----------
+// ---------- users ----------
 
-let patients = [];
+let users = [];
+const ROLE_LABEL = { patient: 'Patient', admin: 'Admin' };
 
-function setupPatients() {
-  $('#pt-search').addEventListener('input', renderPatients);
+function setupUsers() {
+  $('#pt-search').addEventListener('input', renderUsers);
+  $('#pt-role').addEventListener('change', renderUsers);
 }
 
-async function loadPatients() {
+async function loadUsers() {
   try {
-    const snap = await getDocs(query(collection(db, 'patients'), orderBy('createdAt', 'desc'), limit(1000)));
-    patients = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
-    renderPatients();
+    const snap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(1000)));
+    users = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
+    renderUsers();
   } catch (e) {
     notice($('#pt-msg'), 'error', friendlyError(e));
   }
 }
 
-function renderPatients() {
+function roleControl(u) {
+  if (u.uid === me) return el('span', { class: 'badge booked' }, 'Admin (you)');
+  const sel = el(
+    'select',
+    {
+      'aria-label': `Role of ${u.name || u.email}`,
+      onchange: async (e) => {
+        const role = e.target.value;
+        const who = u.name || u.email;
+        const q = role === 'admin' ? `Give ${who} full admin access (appointments, hours, patients, settings)?` : `Remove admin access from ${who}?`;
+        if (!confirm(q)) {
+          e.target.value = u.role ?? 'patient';
+          return;
+        }
+        e.target.disabled = true;
+        await busy(null, $('#pt-msg'), async () => {
+          await call('setRole', { uid: u.uid, role });
+          u.role = role;
+          notice($('#pt-msg'), 'ok', `${who} is now ${ROLE_LABEL[role].toLowerCase()}.`);
+        });
+        e.target.value = u.role ?? 'patient';
+        e.target.disabled = false;
+      },
+    },
+    Object.entries(ROLE_LABEL).map(([v, label]) => el('option', { value: v, selected: (u.role ?? 'patient') === v }, label)),
+  );
+  return sel;
+}
+
+function renderUsers() {
   const q = $('#pt-search').value.trim().toLowerCase();
-  const rows = patients.filter((p) => !q || `${p.name} ${p.phone} ${p.email}`.toLowerCase().includes(q));
+  const role = $('#pt-role').value;
+  const rows = users.filter((u) => (!role || (u.role ?? 'patient') === role) && (!q || `${u.name} ${u.phone} ${u.email}`.toLowerCase().includes(q)));
   $('#pt-rows').replaceChildren(
     ...(rows.length
-      ? rows.map((p) =>
+      ? rows.map((u) =>
           el(
             'tr',
             {},
-            el('td', {}, el('strong', {}, p.name)),
-            el('td', {}, p.phone),
-            el('td', { class: 'small' }, p.email),
-            el('td', { class: 'small' }, p.createdAt?.toDate?.().toLocaleDateString() ?? ''),
-            el('td', {}, el('button', { type: 'button', class: 'btn small secondary', onclick: () => showPatient(p) }, 'Appointments')),
+            el('td', {}, el('strong', {}, u.name || '—')),
+            el('td', {}, u.phone || '—'),
+            el('td', { class: 'small' }, u.email),
+            el('td', {}, roleControl(u)),
+            el('td', { class: 'small' }, u.createdAt?.toDate?.().toLocaleDateString() ?? '', u.lastLoginAt ? el('div', { class: 'muted' }, `last login ${u.lastLoginAt.toDate().toLocaleDateString()}`) : null),
+            el('td', {}, el('button', { type: 'button', class: 'btn small secondary', onclick: () => showPatient(u) }, 'Appointments')),
           ),
         )
-      : [el('tr', {}, el('td', { colspan: 5, class: 'muted' }, q ? 'No patient matches.' : 'No patient accounts yet.'))]),
+      : [el('tr', {}, el('td', { colspan: 6, class: 'muted' }, q || role ? 'No user matches.' : 'No accounts yet.'))]),
   );
 }
 
 async function showPatient(p) {
   const box = $('#pt-detail');
   show(box, true);
-  box.replaceChildren(el('h2', {}, p.name), el('p', { class: 'muted' }, `${p.phone} · ${p.email}`), el('p', { class: 'muted' }, 'Loading…'));
+  box.replaceChildren(el('h2', {}, p.name || p.email), el('p', { class: 'muted' }, `${p.phone || '—'} · ${p.email}`), el('p', { class: 'muted' }, 'Loading…'));
   const snap = await getDocs(query(collection(db, 'appointments'), where('patientUid', '==', p.uid), orderBy('startAt', 'desc')));
   const list = snap.docs.map((d) => d.data());
   box.replaceChildren(
-    el('h2', {}, p.name),
-    el('p', { class: 'muted' }, `${p.phone} · ${p.email}`),
+    el('h2', {}, p.name || p.email),
+    el('p', { class: 'muted' }, `${p.phone || '—'} · ${p.email}`),
     list.length
       ? el(
           'div',

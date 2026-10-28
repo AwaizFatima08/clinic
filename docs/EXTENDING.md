@@ -22,6 +22,7 @@ plug in without changing the booking core. Everything server-side lives in `func
 | `appointment.reminder` | `{ appointment, kind: 'r24' \| 'r1' }` |
 | `hours.changed` | `{ outsideHours: appointment[] }` |
 | `patient.registered` | `{ patient: { uid, name, phone, email } }` |
+| `user.role_changed` | `{ uid, from, to }` |
 | `notification.created` | `{ notification, email }` — hook point for SMS / WhatsApp / push |
 
 ### Filters
@@ -80,3 +81,10 @@ Prescriptions are medical records: keep them out of logs, and review the rules b
 Listen to `notification.created` (or the appointment events directly) and send through the
 provider of your choice (e.g. WhatsApp Business API, SMS gateway). Store the provider key as
 a Firebase secret and respect the patient's preferences.
+
+## Roles
+
+Accounts live in `users/{uid}` with a `role`. Today: `patient` and `admin` (`ROLES` in
+`functions/src/service.js`). To add e.g. `doctor` or `staff`: add it to `ROLES`, decide what it
+may read in `firestore.rules` (rules read the role with `get(/users/$(request.auth.uid))`), allow
+it in the api's `requireAuth`, and add it to `ROLE_LABEL` in `web/src/admin.js`.

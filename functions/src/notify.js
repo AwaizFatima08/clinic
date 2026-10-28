@@ -43,6 +43,8 @@ export const TEMPLATES = {
   }),
   claimed: (a) => ({ title: 'Booking added to your account', body: `Your appointment on ${when(a)} (ref ${a.ref}) is now in your account.` }),
   welcome: (p, s) => ({ title: `Welcome to ${s.clinicName}`, body: `Hello ${p.name}, your account is ready. You can book appointments and see them under "My appointments".` }),
+  roleAdmin: () => ({ title: 'You are now a clinic admin', body: 'You can open the admin panel from the "Clinic login" link at the bottom of the page.' }),
+  rolePatient: () => ({ title: 'Admin access removed', body: 'Your account is now a patient account.' }),
   adminNewBooking: (a) => ({ title: 'New booking', body: `${a.patientName} (${a.phone}) booked ${when(a)}. Ref ${a.ref}.${a.reason ? ` Reason: ${a.reason}` : ''}` }),
   adminCancelled: (a) => ({ title: 'Patient cancelled', body: `${a.patientName} cancelled ${when(a)} (ref ${a.ref}). The slot is free again.` }),
   adminNewPatient: (p) => ({ title: 'New patient account', body: `${p.name} (${p.phone}${p.email ? `, ${p.email}` : ''}) created an account.` }),
@@ -121,6 +123,12 @@ export function registerNotifications({ db, hooks, service, siteUrl }) {
     const s = await service.settings();
     await notify({ audience: 'patient', uid: p.uid, kind: 'welcome', msg: TEMPLATES.welcome(p, s), settings: s });
     await toAdmin('admin_new_patient', TEMPLATES.adminNewPatient(p));
+  });
+
+  hooks.on(EVENTS.USER_ROLE_CHANGED, async ({ uid, to }) => {
+    const s = await service.settings();
+    const msg = to === 'admin' ? TEMPLATES.roleAdmin() : TEMPLATES.rolePatient();
+    await notify({ audience: 'patient', uid, kind: `role_${to}`, msg, settings: s });
   });
 
   // Tell each affected patient once per appointment; give the admin one summary.
