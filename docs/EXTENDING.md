@@ -23,6 +23,7 @@ plug in without changing the booking core. Everything server-side lives in `func
 | `hours.changed` | `{ outsideHours: appointment[] }` |
 | `patient.registered` | `{ patient: { uid, name, phone, email } }` |
 | `user.role_changed` | `{ uid, from, to }` |
+| `user.deleted` | `{ uid, role }` — after the account's personal data is removed; clean up any extension data for that uid |
 | `notification.created` | `{ notification, email }` — hook point for SMS / WhatsApp / push |
 
 ### Filters

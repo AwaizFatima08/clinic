@@ -55,6 +55,13 @@ class AccountRepository {
 
   Future<void> signOut() => _auth.signOut();
 
+  /// Deletes the account on the server (data, then login) and signs out here.
+  Future<Result<void>> deleteMyAccount() async {
+    final r = _void(await _api.call('deleteMyAccount'));
+    if (r is Ok<void>) await _auth.signOut();
+    return r;
+  }
+
   /// Records the login; returns the current role.
   Future<Result<UserRole?>> touch() async => _map(await _api.call('touch'), (m) => _role(m['role']));
 

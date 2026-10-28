@@ -438,5 +438,14 @@
   "testEmailTimeout": "No answer from the mail service yet. Try again in a minute.",
   "emailCheck": "Email check",
   "emailCheckHelp": "Sends a test message to the email you are logged in with, through the clinic mailbox.",
-  "sendTestEmail": "Send test email"
+  "sendTestEmail": "Send test email",
+  "deleteAccountTitle": "Delete my account",
+  "deleteAccountIntro": "Removes your login and your personal details from the clinic system. Upcoming appointments are cancelled.",
+  "deleteAccountButton": "Delete my account",
+  "deleteAccountQuestion": "Delete your account permanently?",
+  "deleteAccountDetails": "• Your upcoming appointments will be cancelled and the clinic will be told.\n• Your name, phone, email and visit reasons are removed from past appointments. The clinic keeps only the date, time and whether the visit took place.\n• Your notifications and login are deleted.\n\nThis cannot be undone. You can create a new account later.",
+  "deleteAccountConfirm": "Delete account",
+  "keepAccount": "Keep my account",
+  "accountDeleted": "Your account has been deleted.",
+  "deleteAccountAdminNote": "If you are the only admin, make someone else an admin first."
 }

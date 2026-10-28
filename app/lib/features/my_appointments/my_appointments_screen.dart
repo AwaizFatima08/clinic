@@ -3,6 +3,7 @@ import 'package:clinic_schedule/core/result.dart';
 import 'package:clinic_schedule/core/validators.dart';
 import 'package:clinic_schedule/data/models.dart';
 import 'package:clinic_schedule/data/providers.dart';
+import 'package:clinic_schedule/features/account/delete_account_card.dart';
 import 'package:clinic_schedule/l10n/gen/app_localizations.dart';
 import 'package:clinic_schedule/widgets/confirm_dialog.dart';
 import 'package:clinic_schedule/widgets/section_card.dart';
@@ -47,6 +48,7 @@ class MyAppointmentsScreen extends ConsumerWidget {
                       : Column(children: [for (final a in past) _AppointmentTile(a, canCancel: false)]),
                 ),
                 const _ClaimCard(),
+                const DeleteAccountCard(),
               ],
             );
           },

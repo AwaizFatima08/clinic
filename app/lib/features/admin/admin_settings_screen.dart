@@ -2,6 +2,7 @@ import 'package:clinic_schedule/core/result.dart';
 import 'package:clinic_schedule/core/validators.dart';
 import 'package:clinic_schedule/data/models.dart';
 import 'package:clinic_schedule/data/providers.dart';
+import 'package:clinic_schedule/features/account/delete_account_card.dart';
 import 'package:clinic_schedule/features/admin/admin_providers.dart';
 import 'package:clinic_schedule/l10n/gen/app_localizations.dart';
 import 'package:clinic_schedule/widgets/busy_button.dart';
@@ -32,6 +33,7 @@ class AdminSettingsScreen extends ConsumerWidget {
             children: [
               _SettingsForm(initial: s),
               const _TestEmailCard(),
+              const DeleteAccountCard(admin: true),
             ],
           ),
         );

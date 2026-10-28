@@ -198,3 +198,50 @@ test('migration copies old patients and email-list admins into users once', asyn
   assert.deepEqual((({ role, email }) => ({ role, email }))((await db.doc('users/old-admin').get()).data()), { role: 'admin', email: 'old-admin@clinic.test' });
   assert.equal(await service.migrateUsers(async () => null), 0, 'second run changes nothing');
 });
+
+test('account deletion: upcoming cancelled, history anonymised, personal data removed', async () => {
+  await service.saveProfile('u-del', 'del@example.com', { name: 'Zara Del', phone: '+923007770001' });
+  const profile = await service.profile('u-del');
+  const past = await service.book({ date: '2026-11-04', start: '10:00', reason: 'Fever' }, { uid: 'u-del', profile });
+  const next = await service.book({ date: '2026-11-05', start: '11:00', reason: 'Follow-up' }, { uid: 'u-del', profile });
+  const other = await service.book(guest({ date: '2026-11-05', start: '12:00' }));
+  clock.at = new Date('2026-11-04T06:00:00Z'); // 11:00: the first visit is over
+  await service.setStatusByAdmin(past.ref, 'completed');
+  for (const d of (await db.collection('mail').get()).docs) await d.ref.update({ status: 'sent' });
+
+  const r = await service.deleteAccount('u-del');
+  assert.deepEqual(r, { cancelled: 1, anonymised: 2 });
+
+  const a1 = (await db.doc(`appointments/${past.ref}`).get()).data();
+  assert.deepEqual(
+    (({ patientUid, patientName, phone, email, reason, status, date, start }) => ({ patientUid, patientName, phone, email, reason, status, date, start }))(a1),
+    { patientUid: null, patientName: 'Deleted user', phone: '', email: '', reason: '', status: 'completed', date: '2026-11-04', start: '10:00' },
+  );
+  const a2 = (await db.doc(`appointments/${next.ref}`).get()).data();
+  assert.equal(a2.status, 'cancelled');
+  assert.equal(a2.cancelledBy, 'patient');
+  assert.equal(a2.patientName, 'Deleted user');
+  assert.deepEqual((await db.doc('days/2026-11-05').get()).data().taken, [{ start: '12:00', end: '12:20' }], 'slot is free again');
+  assert.ok((await notifications((n) => n.audience === 'admin')).some((n) => n.kind === 'admin_cancelled' && n.appointmentId === next.ref));
+
+  assert.equal((await db.doc('users/u-del').get()).exists, false);
+  assert.equal((await notifications((n) => n.uid === 'u-del')).length, 0);
+  const left = (await mails()).filter((m) => m.to === 'del@example.com');
+  assert.ok(left.every((m) => m.status === 'pending'), 'only unsent mail (the cancellation notice) remains');
+  assert.equal((await db.doc(`appointments/${other.ref}`).get()).data().patientName, 'Ayesha Khan', 'others untouched');
+  await assert.rejects(service.claim(past.ref, '+923007770001', 'u-x'), NotFoundError, 'cannot be re-linked by phone');
+
+  assert.deepEqual(await service.deleteAccount('u-del'), { cancelled: 0, anonymised: 0 }, 'safe to repeat');
+});
+
+test('account deletion: the last admin is refused, another admin may leave', async () => {
+  await service.bootstrapAdmin('u-a1', 'a1@clinic.test', ['a1@clinic.test', 'a2@clinic.test']);
+  await assert.rejects(service.deleteAccount('u-a1'), ConflictError);
+  assert.equal(await service.role('u-a1'), 'admin');
+  await service.bootstrapAdmin('u-a2', 'a2@clinic.test', ['a1@clinic.test', 'a2@clinic.test']);
+  await service.deleteAccount('u-a1');
+  assert.equal((await db.doc('users/u-a1').get()).exists, false);
+  await assert.rejects(service.deleteAccount('u-a2'), ConflictError);
+  // The deleted admin's email cannot claim admin again.
+  await assert.rejects(service.bootstrapAdmin('u-new', 'a1@clinic.test', ['a1@clinic.test', 'a2@clinic.test']), PermissionError);
+});

@@ -85,6 +85,21 @@ const OPS = {
     },
   ],
 
+  // Data first, then the login, so a failure part-way can simply be retried.
+  deleteMyAccount: [
+    'patient',
+    async ({ service, auth }) => {
+      rateLimit(`delete:${auth.uid}`, 5, 900_000);
+      const result = await service.deleteAccount(auth.uid);
+      await getAuth()
+        .deleteUser(auth.uid)
+        .catch((e) => {
+          if (e.code !== 'auth/user-not-found') throw e;
+        });
+      return result;
+    },
+  ],
+
   // guest (no account): reference + phone number
   guestLookup: [
     'public',

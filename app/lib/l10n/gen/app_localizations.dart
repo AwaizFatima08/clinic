@@ -1176,6 +1176,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send test email'**
   String get sendTestEmail;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete my account'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteAccountIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Removes your login and your personal details from the clinic system. Upcoming appointments are cancelled.'**
+  String get deleteAccountIntro;
+
+  /// No description provided for @deleteAccountButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete my account'**
+  String get deleteAccountButton;
+
+  /// No description provided for @deleteAccountQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your account permanently?'**
+  String get deleteAccountQuestion;
+
+  /// No description provided for @deleteAccountDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'• Your upcoming appointments will be cancelled and the clinic will be told.\n• Your name, phone, email and visit reasons are removed from past appointments. The clinic keeps only the date, time and whether the visit took place.\n• Your notifications and login are deleted.\n\nThis cannot be undone. You can create a new account later.'**
+  String get deleteAccountDetails;
+
+  /// No description provided for @deleteAccountConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get deleteAccountConfirm;
+
+  /// No description provided for @keepAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep my account'**
+  String get keepAccount;
+
+  /// No description provided for @accountDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account has been deleted.'**
+  String get accountDeleted;
+
+  /// No description provided for @deleteAccountAdminNote.
+  ///
+  /// In en, this message translates to:
+  /// **'If you are the only admin, make someone else an admin first.'**
+  String get deleteAccountAdminNote;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

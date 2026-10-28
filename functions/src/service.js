@@ -477,6 +477,55 @@ export class ClinicService {
   }
 
   /**
+   * Deletes the signed-in user's own account data (Google Play account-deletion rule).
+   *   - upcoming booked appointments are cancelled as by the patient, so the slots open
+   *     again and the admin is told through the usual cancellation hook;
+   *   - every appointment of theirs is then anonymised, not deleted: the clinic keeps the
+   *     date, time and outcome (its visit history and day documents stay consistent), but
+   *     the name, phone, email, visit reason and the link to the account are removed;
+   *   - their in-app notifications, already-processed emails and users/{uid} are deleted.
+   * The caller deletes the Firebase Auth login afterwards. Safe to repeat if that fails.
+   * The last admin cannot delete their account. An admin's uid stays in
+   * settings/private.adminUids so their email cannot claim admin again.
+   */
+  async deleteAccount(uid) {
+    const user = await this.profile(uid);
+    if (user?.role === 'admin') {
+      const admins = await this.db.collection('users').where('role', '==', 'admin').count().get();
+      if (admins.data().count <= 1) throw new ConflictError('You are the only admin. Make someone else an admin before deleting your account.');
+    }
+    const mine = (await this.db.collection('appointments').where('patientUid', '==', uid).get()).docs.map((d) => d.data());
+    let cancelled = 0;
+    for (const a of mine) {
+      if (a.status !== 'booked' || a.startAt.toDate() <= this.now()) continue;
+      await this.changeStatus(a.ref, 'cancelled', 'patient');
+      cancelled++;
+    }
+
+    const anon = { patientUid: null, patientName: 'Deleted user', phone: '', email: '', reason: '', anonymisedAt: Timestamp.fromDate(this.now()) };
+    const emails = new Set([user?.email, ...mine.map((a) => a.email)].filter(Boolean));
+    const refs = [
+      ...mine.map((a) => ({ ref: this.apptRef(a.ref), patch: anon })),
+      ...(await this.db.collection('notifications').where('uid', '==', uid).get()).docs.map((d) => ({ ref: d.ref })),
+      // Sent or failed emails only; pending ones (e.g. the cancellation notices above) still go out.
+      ...(
+        await Promise.all([...emails].map((to) => this.db.collection('mail').where('to', '==', to).get()))
+      ).flatMap((q) => q.docs.filter((d) => d.data().status !== 'pending').map((d) => ({ ref: d.ref }))),
+      { ref: this.userRef(uid) },
+    ];
+    for (let i = 0; i < refs.length; i += 400) {
+      const batch = this.db.batch();
+      for (const { ref, patch } of refs.slice(i, i + 400)) {
+        if (patch) batch.update(ref, patch);
+        else batch.delete(ref);
+      }
+      await batch.commit();
+    }
+    await this.hooks.emit(EVENTS.USER_DELETED, { uid, role: user?.role ?? null });
+    return { cancelled, anonymised: mine.length };
+  }
+
+  /**
    * One-time move from the old `patients` collection and email-list admins to `users`.
    * Safe to run repeatedly; never overwrites an existing user's role.
    */

@@ -641,4 +641,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sendTestEmail => 'Send test email';
+
+  @override
+  String get deleteAccountTitle => 'Delete my account';
+
+  @override
+  String get deleteAccountIntro =>
+      'Removes your login and your personal details from the clinic system. Upcoming appointments are cancelled.';
+
+  @override
+  String get deleteAccountButton => 'Delete my account';
+
+  @override
+  String get deleteAccountQuestion => 'Delete your account permanently?';
+
+  @override
+  String get deleteAccountDetails =>
+      '• Your upcoming appointments will be cancelled and the clinic will be told.\n• Your name, phone, email and visit reasons are removed from past appointments. The clinic keeps only the date, time and whether the visit took place.\n• Your notifications and login are deleted.\n\nThis cannot be undone. You can create a new account later.';
+
+  @override
+  String get deleteAccountConfirm => 'Delete account';
+
+  @override
+  String get keepAccount => 'Keep my account';
+
+  @override
+  String get accountDeleted => 'Your account has been deleted.';
+
+  @override
+  String get deleteAccountAdminNote => 'If you are the only admin, make someone else an admin first.';
 }
